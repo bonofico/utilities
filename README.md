@@ -4,6 +4,10 @@
  - [google SDK](https://cloud.google.com/appengine/downloads) is installed and the `gcloud` utility is in the user's PATH envrionment variable.
  - `gcloud` is logged in to your ops school google account (run `gcloud auth login` to login).
 
+#### Notices ####
+ - All of the machines are built using the chef server so that machine should be up before starting any other role
+ - the chef server machine name will always be `chefserver` for easy access from all other machines connecting to it.
+
 #### Usage: ####
 > Usage: `manage_vms.sh <action> [-n <name>] [-r <role>] [-m <machine_type>] [-p <project_id>] [-q]`
 >

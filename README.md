@@ -15,6 +15,7 @@
 >  * list-vms (list current vms in project).
 >  * list-types (list available machine types in project).
 >  * list-roles (list available roles for machines).
+>  * list-projects (list available projects).
 >  * start, stop, delete (requires vm name).
 >  * create (requires vm name & role, if no type is specified the default will be used).
 >

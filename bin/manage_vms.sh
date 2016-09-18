@@ -7,6 +7,7 @@ usage() {
   echo " * list-vms (list current vms in project)"
   echo " * list-types (list available machine types in project)"
   echo " * list-roles (list available roles for machines)"
+  echo " * list-projects (list available projects)"
   echo " * start, stop, delete (requires vm name)"
   echo " * create (requires vm name & role, if no type is specified the default will be used)"
   echo ""
@@ -81,6 +82,10 @@ case "$1" in
     ACTION="list-roles"
     shift
     ;;
+  list-projects)
+    ACTION="list-projects"
+    shift
+    ;;
   *)
     usage
     ;;
@@ -143,8 +148,15 @@ case "$ACTION" in
   list-roles)
     validate_role ""
     ;;
+  list-projects)
+    ${GCLOUD_COMMAND} projects list
+    ;;
   create)
     validate_role "$ROLE"
+    if [[ "$ROLE" == "chefserver" ]] && [[ "$NAME" != "chefserver" ]]
+    then
+      echo "Overriding chef server machine name to 'chefserver' to allow conectivity from all clients"
+    fi
     command=$(generate_create_vm_command "$NAME" "$ROLE" "$MACHINE")
     eval "${GCLOUD_COMMAND} compute instances create ${command} --zone ${ZONE}"
     ;;

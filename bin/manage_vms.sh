@@ -8,7 +8,7 @@ usage() {
   echo " * list-types (list available machine types in project)"
   echo " * list-roles (list available roles for machines)"
   echo " * list-projects (list available projects)"
-  echo " * start, stop, delete (requires vm name)"
+  echo " * ssh, start, stop, delete (requires vm name)"
   echo " * create (requires vm name & role, if no type is specified the default will be used)"
   echo ""
   echo ""
@@ -68,6 +68,10 @@ case "$1" in
     ;;
   delete)
     ACTION="delete"
+    shift
+    ;;
+  ssh)
+    ACTION="ssh"
     shift
     ;;
   list-vms)
@@ -159,6 +163,10 @@ case "$ACTION" in
     fi
     command=$(generate_create_vm_command "$NAME" "$ROLE" "$MACHINE")
     eval "${GCLOUD_COMMAND} compute instances create ${command} --zone ${ZONE}"
+    echo "vm was created & started, it will run chef to provision the required role (chef run output can be found in /tmp/chef_client.log on the machine)"
+    ;;
+  ssh)
+    ${GCLOUD_COMMAND} compute ssh --zone ${ZONE} "${NAME}"
     ;;
   *)
     ${GCLOUD_COMMAND} compute instances ${ACTION} "${NAME}" --zone ${ZONE}

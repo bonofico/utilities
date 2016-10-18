@@ -1,11 +1,11 @@
 #!/bin/bash -e
 
 usage() {
-  echo "Usage: $(basename "$0") <action> [-n <name>] [-r <role>] [-m <machine_type>] [-p <project_id>] [-q]"
+  echo "Usage: $(basename "$0") <action> [-n <name>] [-r <role>] [-m <vm_type>] [-p <project_id>] [-q] [-v]"
   echo ""
   echo "Actions:"
   echo " * list-vms (list current vms in project)"
-  echo " * list-types (list available machine types in project)"
+  echo " * list-vm-types (list available machine types in project)"
   echo " * list-roles (list available roles for machines)"
   echo " * list-projects (list available projects)"
   echo " * ssh, start, stop, delete (requires vm name)"
@@ -16,6 +16,7 @@ usage() {
   echo ""
   echo " -p project_id - set project id (for multiple project support)"
   echo " -q - no prompt (will not ask for interactive approval on delete)"
+  echo " -v - enable verbose mode (print gcloud command prior to execution)"
   echo ""
   exit 3
 }
@@ -41,14 +42,29 @@ validate_role() {
   local role="$1"
   if ! [[ " $ROLES " =~ " $role " ]]
   then
+    echo
     echo "VM role must be one of:"
-    echo "$ROLES"
+    for THE_ROLE in ${ROLES}
+    do
+      echo "     ${THE_ROLE}"
+    done
+    echo
     exit 4
   fi
 }
 
-ROLES="mysql cassandra chefserver elasticsearch kibana nginx prometheus"
+run_command() {
+  if ${VERBOSE}
+  then
+    echo "gcloud command used is: \"$@\""
+    echo
+  fi
+  eval "$@"
+} 
+
+ROLES="chefserver mysql cassandra elasticsearch kibana nginx prometheus"
 SILENT=false
+VERBOSE=false
 GCLOUD_COMMAND="gcloud"
 MACHINE="n1-standard-1"
 ZONE="europe-west1-b"
@@ -78,8 +94,8 @@ case "$1" in
     ACTION="list-vms"
     shift
     ;;
-  list-types)
-    ACTION="list-types"
+  list-vm-types)
+    ACTION="list-vm-types"
     shift
     ;;
   list-roles)
@@ -114,6 +130,10 @@ do
       MACHINE="$2"
       shift 2
       ;;
+    -v)
+      VERBOSE=true
+      shift
+      ;;
     -q)
       SILENT=true
       shift
@@ -124,7 +144,7 @@ do
   esac
 done
 
-if ! [[ "$ACTION" =~ ^list\-[a-z]+$ ]] && [[ ! $NAME ]]
+if ! [[ "$ACTION" =~ ^list\-[a-z]+ ]] && [[ ! $NAME ]]
 then
   echo ""
   echo "VM name must be set if action is not list"
@@ -144,32 +164,39 @@ fi
 
 case "$ACTION" in
   list-vms)
-    ${GCLOUD_COMMAND} compute instances list --zones ${ZONE}
+    echo
+    run_command ${GCLOUD_COMMAND} compute instances list --zones ${ZONE}
+    echo
     ;;
-  list-types)
-    ${GCLOUD_COMMAND} compute machine-types list --zones ${ZONE}
+  list-vm-types)
+    echo
+    run_command ${GCLOUD_COMMAND} compute machine-types list --zones ${ZONE}
+    echo
     ;;
   list-roles)
     validate_role ""
     ;;
   list-projects)
-    ${GCLOUD_COMMAND} projects list
+    echo
+    run_command ${GCLOUD_COMMAND} projects list
+    echo
     ;;
   create)
     validate_role "$ROLE"
     if [[ "$ROLE" == "chefserver" ]] && [[ "$NAME" != "chefserver" ]]
     then
-      echo "Overriding chef server machine name to 'chefserver' to allow conectivity from all clients"
+      echo "Overriding chef server machine name to 'chefserver' to allow connectivity from all clients"
     fi
     command=$(generate_create_vm_command "$NAME" "$ROLE" "$MACHINE")
-    eval "${GCLOUD_COMMAND} compute instances create ${command} --zone ${ZONE}"
+    run_command ${GCLOUD_COMMAND} compute instances create ${command} --zone ${ZONE}
+    #eval "${GCLOUD_COMMAND} compute instances create ${command} --zone ${ZONE}"
     echo "vm was created & started, it will run chef to provision the required role (chef run output can be found in /tmp/chef_client.log on the machine)"
     ;;
   ssh)
-    ${GCLOUD_COMMAND} compute ssh --zone ${ZONE} "${NAME}"
+    run_command ${GCLOUD_COMMAND} compute ssh --zone ${ZONE} "${NAME}"
     ;;
   *)
-    ${GCLOUD_COMMAND} compute instances ${ACTION} "${NAME}" --zone ${ZONE}
+    run_command ${GCLOUD_COMMAND} compute instances ${ACTION} "${NAME}" --zone ${ZONE}
     ;;
 esac
 

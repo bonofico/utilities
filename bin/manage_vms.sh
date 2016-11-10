@@ -31,7 +31,7 @@ generate_create_vm_command() {
   local machine_type="$3"
   if [[ "$vm_role" == "chefserver" ]]
   then
-    create_command="${chef_server_name} --image ${chef_server_image} --machine-type ${machine_type}"
+    create_command="${chef_server_name} --image ${chef_server_image} --machine-type ${machine_type} --tags \"https-server\""
   else
     create_command="${vm_name} --image ${chef_client_image} --machine-type ${machine_type} --metadata startup-script=\"chef-client -r role[${vm_role}] > /tmp/chef_client.log 2>&1\""
   fi

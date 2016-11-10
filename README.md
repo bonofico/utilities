@@ -11,7 +11,7 @@ manage_vms is a wrapper for running gcloud commands.
  - the chef server machine name will always be `chefserver` for easy access from all other machines connecting to it.
 
 #### Usage: ####
-> Usage: `manage_vms.sh <action> [-n <name>] [-r <role>] [-m <machine_type>] [-p <project_id>] [-q] [-v]`
+> Usage: `manage_vms.sh <action> [-n <name>] [-r <role>] [-m <machine_type>] [-p <project_id>] [-q] [-v] [-c <client_role>]`
 >
 > ###### Actions: ######
 >  * list-vms (list current vms in project).
@@ -23,5 +23,6 @@ manage_vms is a wrapper for running gcloud commands.
 >
 > ###### Additional flags: ######
 >  * project_id (set project id - for multiple project support).
+>  * client_role - sets a custom role for the machine (available when -r is set to chefclient)
 >  * q - no prompt (will not ask for interactive approval on delete).
 >  * v - enable verbose mode (print gcloud command prior to execution)

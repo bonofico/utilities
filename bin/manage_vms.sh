@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 usage() {
-  echo "Usage: $(basename "$0") <action> [-n <name>] [-r <role>] [-m <vm_type>] [-p <project_id>] [-q] [-v]"
+  echo "Usage: $(basename "$0") <action> [-n <name>] [-r <role>] [-m <vm_type>] [-p <project_id>] [-q] [-v] [-c <client_role>]"
   echo ""
   echo "Actions:"
   echo " * list-vms (list current vms in project)"
@@ -15,6 +15,7 @@ usage() {
   echo "Additional flags:"
   echo ""
   echo " -p project_id - set project id (for multiple project support)"
+  echo " -c client_role - sets a custom role for the machine (available when -r is set to chefclient)"
   echo " -q - no prompt (will not ask for interactive approval on delete)"
   echo " -v - enable verbose mode (print gcloud command prior to execution)"
   echo ""
@@ -29,11 +30,15 @@ generate_create_vm_command() {
   local vm_name="$1"
   local vm_role="$2"
   local machine_type="$3"
+  local client_role="$4"
   if [[ "$vm_role" == "chefserver" ]]
   then
     create_command="${chef_server_name} --image ${chef_server_image} --machine-type ${machine_type} --tags \"https-server\""
+  elif [[ "$vm_role" == "chefclient" ]]
+  then
+    create_command="${vm_name} --image ${chef_client_image} --machine-type ${machine_type} --tags \"http-server\" --metadata startup-script=\"chef-client -r role[${client_role}] > /tmp/chef_client.log 2>&1\""
   else
-    create_command="${vm_name} --image ${chef_client_image} --machine-type ${machine_type} --metadata startup-script=\"chef-client -r role[${vm_role}] > /tmp/chef_client.log 2>&1\""
+    create_command="${vm_name} --image ${chef_client_image} --machine-type ${machine_type} --tags \"http-server\" --metadata startup-script=\"chef-client -r role[${vm_role}] > /tmp/chef_client.log 2>&1\""
   fi
   echo "$create_command"
 }
@@ -62,7 +67,7 @@ run_command() {
   eval "$@"
 } 
 
-ROLES="chefserver mysql cassandra elasticsearch kibana nginx prometheus"
+ROLES="chefserver mysql cassandra elasticsearch kibana nginx prometheus chefclient"
 SILENT=false
 VERBOSE=false
 GCLOUD_COMMAND="gcloud"
@@ -130,6 +135,10 @@ do
       MACHINE="$2"
       shift 2
       ;;
+    -c)
+      CLIENT_ROLE="$2"
+      shift 2
+      ;;
     -v)
       VERBOSE=true
       shift
@@ -187,7 +196,7 @@ case "$ACTION" in
     then
       echo "Overriding chef server machine name to 'chefserver' to allow connectivity from all clients"
     fi
-    command=$(generate_create_vm_command "$NAME" "$ROLE" "$MACHINE")
+    command=$(generate_create_vm_command "$NAME" "$ROLE" "$MACHINE" "$CLIENT_ROLE")
     run_command ${GCLOUD_COMMAND} compute instances create ${command} --zone ${ZONE}
     #eval "${GCLOUD_COMMAND} compute instances create ${command} --zone ${ZONE}"
     echo "vm was created & started, it will run chef to provision the required role (chef run output can be found in /tmp/chef_client.log on the machine)"

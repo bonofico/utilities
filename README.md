@@ -3,7 +3,7 @@
 manage_vms is a wrapper for running gcloud commands.
 
 #### Prerequisites: ####
- - [google SDK](https://cloud.google.com/appengine/downloads) is installed and the `gcloud` utility is in the user's PATH envrionment variable.
+ - [google SDK](https://cloud.google.com/sdk/) is installed and the `gcloud` utility is in the user's PATH envrionment variable.
  - `gcloud` is logged in to your ops school google account (run `gcloud auth login` to login).
 
 #### Notices ####
